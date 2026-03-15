@@ -78,14 +78,12 @@ body{font-family:"Noto Sans KR",sans-serif;background:var(--bg);min-height:100vh
 .os{display:inline-block;border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;border:none;font-family:"Noto Sans KR",sans-serif}
 .sp_{background:#FFF3CD;color:#8B6914}.sd{background:#D4EDDA;color:#1A6B33}
 .ali{padding:6px 0;border-bottom:1px solid var(--bd);font-size:11px;color:var(--tx)}.ali:last-child{border-bottom:none}
-.sync-row{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:10px;font-size:11px;color:var(--txm)}
-.sync-dot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0}
-.sync-dot.ok{background:var(--acc)}.sync-dot.err{background:var(--dng)}.sync-dot.spin{background:var(--sec);animation:pulse 1s ease-in-out infinite}
+.sync-row{display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:11px;color:var(--txm)}
+.sdot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0}
+.sdot.ok{background:var(--acc)}.sdot.err{background:var(--dng)}.sdot.spin{background:var(--sec);animation:pulse 1s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.loading-wrap{display:flex;flex-direction:column;align-items:center;padding:40px;gap:12px}
-.spinner{width:36px;height:36px;border:3px solid var(--bd);border-top-color:var(--pr);border-radius:50%;animation:spin .8s linear infinite}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--bd);border-top-color:var(--pr);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.err-box{background:#FEE;border:1.5px solid var(--dng);border-radius:12px;padding:14px;margin:12px;font-size:12px;color:#9B2020;line-height:1.8;text-align:center}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#2D2D2D;color:#fff;border-radius:20px;padding:8px 20px;font-size:12px;font-weight:500;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;font-family:"Noto Sans KR",sans-serif}
 .toast.show{opacity:1}
 </style>
@@ -106,15 +104,13 @@ body{font-family:"Noto Sans KR",sans-serif;background:var(--bg);min-height:100vh
     <div class="lc">
       <div class="lc-t">반갑습니다!</div>
       <div class="lc-s">이름을 눌러서 포인트몰 입장</div>
-      <div class="cg" id="chipGrid">
-        <div class="loading-wrap"><div class="spinner"></div><div style="font-size:12px;color:var(--txm)">불러오는 중...</div></div>
-      </div>
+      <div class="cg" id="chipGrid"><div class="ce"><span class="spinner"></span>불러오는 중...</div></div>
     </div>
   </div>
 
   <div id="pg-shop" style="display:none">
     <div class="main">
-      <div class="sync-row"><span class="sync-dot" id="syncDot"></span><span id="syncTxt"></span></div>
+      <div class="sync-row"><span class="sdot" id="sd1"></span><span id="st1"></span></div>
       <div class="banner">
         <div><div class="bn" id="sh-nm">-</div><div class="bns">내 포인트</div></div>
         <div class="pb"><span class="star">★</span><span id="sh-pts">0</span> P</div>
@@ -154,8 +150,8 @@ body{font-family:"Noto Sans KR",sans-serif;background:var(--bg);min-height:100vh
   <div id="pg-adm" style="display:none">
     <div class="main">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div class="sync-row" style="margin-bottom:0"><span class="sync-dot" id="syncDot2"></span><span id="syncTxt2"></span></div>
-        <button class="bs bl" onclick="loadData(true)">🔄 새로고침</button>
+        <div class="sync-row" style="margin-bottom:0"><span class="sdot" id="sd2"></span><span id="st2"></span></div>
+        <button class="bs bl" onclick="loadData()">🔄 새로고침</button>
       </div>
       <div class="adc">
         <div class="st"><span class="dot"></span>학생 포인트 관리</div>
@@ -169,7 +165,7 @@ body{font-family:"Noto Sans KR",sans-serif;background:var(--bg);min-height:100vh
       </div>
       <div class="adc">
         <div class="st"><span class="dot"></span>과자 재고 관리</div>
-        <div class="adsb">수정 후 각 행의 저장 버튼을 눌러주세요</div>
+        <div class="adsb">수정 후 저장 버튼을 눌러주세요</div>
         <table class="tbl"><thead><tr><th>과자</th><th>포인트</th><th>재고</th><th></th></tr></thead><tbody id="snTb"></tbody></table>
       </div>
       <div class="adc">
@@ -180,8 +176,9 @@ body{font-family:"Noto Sans KR",sans-serif;background:var(--bg);min-height:100vh
         <div class="st"><span class="dot"></span>학생 추가</div>
         <div class="adr">
           <input type="text" id="newNm" class="adi" placeholder="새 학생 이름">
-          <button class="bs gn" onclick="addStu()">추가</button>
+          <button class="bs gn" id="addStuBtn" onclick="addStu()">추가</button>
         </div>
+        <div id="addStuMsg" style="font-size:11px;margin-top:6px;color:var(--txm)"></div>
       </div>
     </div>
   </div>
@@ -212,101 +209,107 @@ const SNACKS_DATA=[
 {id:20,name:"허쉬키세스",img:"data:image/jpeg;base64,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",points:35,stock:8}
 ];
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-zdZ1SJyCC2TE070nHUgW18ZwwfgtgWmYEScZm9S0Gi2WtEoWOS4yfQm4Orr_Yu-O/exec";
+const GAS = "https://script.google.com/macros/s/AKfycbz-zdZ1SJyCC2TE070nHUgW18ZwwfgtgWmYEScZm9S0Gi2WtEoWOS4yfQm4Orr_Yu-O/exec";
 
-const D = {
-  students: [],
-  snacks: SNACKS_DATA.map(s => ({...s})),
-  orders: [],
-  attLogs: [],
-  attChk: {},
-  user: null,
-  cart: [],
-  mode: 's',
-};
-
-// ── API ───────────────────────────────────────────────────────
-function api(params) {
+// ── JSONP 호출 ────────────────────────────────────────────────
+// Apps Script는 JSONP만 가능 (CORS 미지원)
+function gasCall(params) {
   return new Promise((resolve, reject) => {
-    const cbName = 'cb_' + Date.now() + '_' + Math.floor(Math.random()*9999);
-    const qs = Object.entries(params).map(([k,v]) =>
-      k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v)
+    const cb = '_gas_' + Date.now();
+    const qs = Object.keys(params).map(k =>
+      encodeURIComponent(k) + '=' + encodeURIComponent(
+        typeof params[k] === 'object' ? JSON.stringify(params[k]) : params[k]
+      )
     ).join('&');
-    const script = document.createElement('script');
+
+    const tag = document.createElement('script');
+    tag.type = 'text/javascript';
+
+    const cleanup = () => {
+      try { document.head.removeChild(tag); } catch(e) {}
+      delete window[cb];
+    };
+
     const timer = setTimeout(() => {
-      delete window[cbName];
-      script.remove();
-      reject(new Error('요청 시간 초과'));
+      cleanup();
+      reject(new Error('응답 시간 초과 (15초)'));
     }, 15000);
-    window[cbName] = function(data) {
+
+    window[cb] = (data) => {
       clearTimeout(timer);
-      delete window[cbName];
-      script.remove();
-      if (data.error) reject(new Error(data.error));
+      cleanup();
+      if (data && data.error) reject(new Error(data.error));
       else resolve(data);
     };
-    script.src = SCRIPT_URL + '?' + qs + '&callback=' + cbName;
-    script.onerror = () => { clearTimeout(timer); delete window[cbName]; script.remove(); reject(new Error('네트워크 오류')); };
-    document.head.appendChild(script);
+
+    // onerror 제거 — Apps Script 리다이렉트 때 onerror 오발동 문제
+    tag.src = GAS + '?' + qs + '&callback=' + cb;
+    document.head.appendChild(tag);
   });
 }
 
-function sync(state, msg, id2=false) {
-  const ids = id2 ? ['syncDot2','syncTxt2'] : ['syncDot','syncTxt'];
-  ids.forEach((id,i) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (i===0) { el.className = 'sync-dot ' + state; }
-    else { el.textContent = msg; }
-  });
+// ── 앱 상태 ───────────────────────────────────────────────────
+const D = {
+  students: [], snacks: SNACKS_DATA.map(s=>({...s})),
+  orders: [], attLogs: [], attChk: {}, user: null, cart: [], mode: 's'
+};
+
+function syncUI(dotId, txtId, state, msg) {
+  const d = document.getElementById(dotId);
+  const t = document.getElementById(txtId);
+  if (d) d.className = 'sdot ' + state;
+  if (t) t.textContent = msg;
 }
 
 // ── 데이터 로드 ───────────────────────────────────────────────
-async function loadData(isAdmin=false) {
-  sync('spin', '연결 중...', isAdmin);
+async function loadData() {
+  syncUI('sd1','st1','spin','연결 중...');
+  syncUI('sd2','st2','spin','연결 중...');
   try {
-    const data = await api({ action: 'getData' });
+    const data = await gasCall({ action:'getData' });
     D.students = (data.students||[]).map(s => ({
-      id: s['id'], name: s['이름'], points: Number(s['포인트'])
+      id: Number(s['id']), name: String(s['이름']), points: Number(s['포인트'])
     }));
     D.snacks = (data.snacks||[]).map(s => {
-      const base = SNACKS_DATA.find(x => x.name === s['이름']) || {};
-      return { id: s['id'], name: s['이름'], points: Number(s['포인트']), stock: Number(s['재고']), img: base.img || '' };
+      const base = SNACKS_DATA.find(x => x.name === String(s['이름'])) || {};
+      return { id: Number(s['id']), name: String(s['이름']), points: Number(s['포인트']), stock: Number(s['재고']), img: base.img||'' };
     });
     D.orders = (data.orders||[]).map(o => ({
-      id: o['주문id'], student: o['학생이름'], itemStr: o['과자목록'],
-      total: Number(o['총포인트']), time: o['시간'], status: o['상태']
+      id: Number(o['주문id']), student: String(o['학생이름']),
+      itemStr: String(o['과자목록']), total: Number(o['총포인트']),
+      time: String(o['시간']), status: String(o['상태'])
     }));
-    // 출석 기록 그룹핑
-    const rawLogs = (data.attLogs||[]);
-    const grouped = {};
+    const rawLogs = data.attLogs||[];
+    const grp = {};
     rawLogs.forEach(l => {
-      const key = l['날짜'] + '|' + l['시간'];
-      if (!grouped[key]) grouped[key] = { date:l['날짜'], time:l['시간'], names:[], pts:Number(l['적립포인트']) };
-      grouped[key].names.push(l['학생이름']);
+      const k = l['날짜']+'|'+l['시간'];
+      if (!grp[k]) grp[k] = {date:l['날짜'],time:l['시간'],names:[],pts:Number(l['적립포인트'])};
+      grp[k].names.push(l['학생이름']);
     });
-    D.attLogs = Object.values(grouped).slice(0, 20);
+    D.attLogs = Object.values(grp).slice(0,20);
 
-    sync('ok', '동기화 완료', isAdmin);
+    syncUI('sd1','st1','ok','연결됨');
+    syncUI('sd2','st2','ok','연결됨');
     renderChips();
-    if (D.mode === 'a') renderAtt();
-    if (D.mode === 'm') renderAdm();
+    if (D.mode==='a') renderAtt();
+    if (D.mode==='m') renderAdm();
     if (D.user) {
-      const updated = D.students.find(s => s.id === D.user.id);
-      if (updated) { D.user = updated; renderShop(); }
+      const u = D.students.find(s=>s.id===D.user.id);
+      if (u) { D.user=u; renderShop(); }
     }
   } catch(e) {
-    sync('err', '연결 실패', isAdmin);
+    syncUI('sd1','st1','err','연결 실패: '+e.message);
+    syncUI('sd2','st2','err','연결 실패: '+e.message);
     document.getElementById('chipGrid').innerHTML =
-      `<div class="err-box">⚠️ 서버 연결 실패<br><small>${e.message}</small><br><button class="bs" onclick="loadData()" style="margin-top:8px">다시 시도</button></div>`;
+      '<div class="ce" style="color:var(--dng)">⚠️ 연결 실패<br><small>'+e.message+'</small><br><button class="bs" style="margin-top:8px" onclick="loadData()">다시 시도</button></div>';
   }
 }
 
 // ── 모드 ──────────────────────────────────────────────────────
 function setMode(m) {
   D.mode = m;
-  ['s','a','m'].forEach(x => document.getElementById('tb-'+x).classList.toggle('on', x===m));
-  if (m==='s') { logout(); }
+  ['s','a','m'].forEach(x => document.getElementById('tb-'+x).classList.toggle('on',x===m));
+  if (m==='s') logout();
   else if (m==='a') { showPg('att'); renderAtt(); }
   else { showPg('adm'); renderAdm(); }
 }
@@ -320,29 +323,26 @@ function showPg(p) {
 // ── 학생 로그인 ───────────────────────────────────────────────
 function renderChips() {
   const el = document.getElementById('chipGrid');
-  if (!D.students.length) { el.innerHTML = '<div class="ce">학생 데이터가 없습니다</div>'; return; }
+  if (!D.students.length) { el.innerHTML='<div class="ce">학생 없음</div>'; return; }
   el.innerHTML = D.students.map(s =>
     `<button class="chip" onclick="loginAs(${s.id})">${s.name}</button>`
   ).join('');
 }
 
 function loginAs(id) {
-  D.user = D.students.find(s => s.id === id);
-  D.cart = [];
-  showPg('shop');
-  renderShop();
+  D.user = D.students.find(s=>s.id===id);
+  D.cart = []; showPg('shop'); renderShop();
 }
-
-function logout() { D.user = null; D.cart = []; showPg('login'); renderChips(); }
+function logout() { D.user=null; D.cart=[]; showPg('login'); renderChips(); }
 
 // ── 쇼핑 ─────────────────────────────────────────────────────
 function renderShop() {
   const u = D.user;
-  document.getElementById('sh-nm').textContent = u.name + ' 학생';
+  document.getElementById('sh-nm').textContent = u.name+' 학생';
   document.getElementById('sh-pts').textContent = u.points;
   document.getElementById('snackGrid').innerHTML = D.snacks.map(s => {
-    const oos = s.stock === 0;
-    const inC = D.cart.filter(c => c.id === s.id).length;
+    const oos = s.stock===0;
+    const inC = D.cart.filter(c=>c.id===s.id).length;
     return `<div class="sc ${oos?'oos':''}" onclick="${oos?'':'addCart('+s.id+')'}">
       ${oos?'<span class="ob">품절</span>':''}
       <div class="si"><img src="${s.img}" alt="${s.name}" onerror="this.parentNode.innerHTML='🍬'"></div>
@@ -355,11 +355,11 @@ function renderShop() {
 }
 
 function addCart(id) {
-  const s = D.snacks.find(s => s.id === id);
-  if (!s || s.stock === 0) return;
-  if (D.cart.filter(c=>c.id===id).length >= s.stock) { toast('재고가 부족해요!'); return; }
-  if (D.cart.reduce((a,c)=>a+c.points,0)+s.points > D.user.points) { toast('포인트가 부족해요!'); return; }
-  D.cart.push({id:s.id, name:s.name, points:s.points, img:s.img});
+  const s = D.snacks.find(s=>s.id===id);
+  if (!s||s.stock===0) return;
+  if (D.cart.filter(c=>c.id===id).length>=s.stock) { toast('재고 부족!'); return; }
+  if (D.cart.reduce((a,c)=>a+c.points,0)+s.points>D.user.points) { toast('포인트 부족!'); return; }
+  D.cart.push({id:s.id,name:s.name,points:s.points,img:s.img});
   renderShop(); toast('장바구니에 담았어요!');
 }
 
@@ -367,12 +367,12 @@ function renderCart() {
   const el = document.getElementById('cartItems');
   const tot = D.cart.reduce((a,c)=>a+c.points,0);
   if (!D.cart.length) {
-    el.innerHTML = '<div class="ce">과자를 선택해보세요!</div>';
-    document.getElementById('cartTot').style.display = 'none';
-    document.getElementById('orderBtn').disabled = true; return;
+    el.innerHTML='<div class="ce">과자를 선택해보세요!</div>';
+    document.getElementById('cartTot').style.display='none';
+    document.getElementById('orderBtn').disabled=true; return;
   }
-  const g = {};
-  D.cart.forEach(c => { if(!g[c.id]) g[c.id]={...c,qty:0}; g[c.id].qty++; });
+  const g={};
+  D.cart.forEach(c=>{ if(!g[c.id]) g[c.id]={...c,qty:0}; g[c.id].qty++; });
   el.innerHTML = Object.values(g).map(c =>
     `<div class="ci">
       <span class="ci-n"><img src="${c.img}" style="width:18px;height:18px;border-radius:3px;object-fit:cover;vertical-align:middle;margin-right:4px" onerror="this.style.display='none'">${c.name} x${c.qty}</span>
@@ -382,57 +382,49 @@ function renderCart() {
       </span>
     </div>`
   ).join('');
-  document.getElementById('cartTot').style.display = 'flex';
-  document.getElementById('ctPts').textContent = tot + ' P';
-  document.getElementById('orderBtn').disabled = false;
+  document.getElementById('cartTot').style.display='flex';
+  document.getElementById('ctPts').textContent=tot+' P';
+  document.getElementById('orderBtn').disabled=false;
 }
 
 function removeCart(id) {
-  const idx = D.cart.map(c=>c.id).lastIndexOf(id);
-  if (idx!==-1) D.cart.splice(idx,1);
-  renderShop();
+  const idx=D.cart.map(c=>c.id).lastIndexOf(id);
+  if(idx!==-1) D.cart.splice(idx,1); renderShop();
 }
 
 async function placeOrder() {
-  if (!D.cart.length) return;
-  const g = {};
-  D.cart.forEach(c => { if(!g[c.id]) g[c.id]={...c,qty:0}; g[c.id].qty++; });
-  const items = Object.values(g);
-  const total = D.cart.reduce((a,c)=>a+c.points,0);
-  const btn = document.getElementById('orderBtn');
-  btn.disabled = true; btn.textContent = '처리 중...';
-  sync('spin','주문 처리 중...');
+  const g={};
+  D.cart.forEach(c=>{ if(!g[c.id]) g[c.id]={...c,qty:0}; g[c.id].qty++; });
+  const items=Object.values(g);
+  const total=D.cart.reduce((a,c)=>a+c.points,0);
+  const btn=document.getElementById('orderBtn');
+  btn.disabled=true; btn.textContent='처리 중...';
+  syncUI('sd1','st1','spin','주문 처리 중...');
   try {
-    const res = await api({
-      action:'order', student:D.user.name,
-      items: items.map(i=>({id:i.id,name:i.name,qty:i.qty,points:i.points})),
-      total
-    });
-    D.user.points = res.newPoints;
-    const st = D.students.find(s=>s.id===D.user.id);
-    if (st) st.points = res.newPoints;
-    items.forEach(it => { const s=D.snacks.find(s=>s.id===it.id); if(s) s.stock-=it.qty; });
-    D.cart = [];
-    sync('ok','주문 완료');
+    const res = await gasCall({action:'order',student:D.user.name,items:items.map(i=>{return{id:i.id,name:i.name,qty:i.qty,points:i.points}}),total});
+    D.user.points=res.newPoints;
+    const st=D.students.find(s=>s.id===D.user.id); if(st) st.points=res.newPoints;
+    items.forEach(it=>{ const s=D.snacks.find(s=>s.id===it.id); if(s) s.stock-=it.qty; });
+    D.cart=[]; syncUI('sd1','st1','ok','주문 완료');
     renderShop(); toast('주문 완료! 선생님께 받으세요 🎉');
   } catch(e) {
-    sync('err','주문 실패');
-    toast('주문 실패: ' + e.message);
-    btn.disabled = false; btn.textContent = '주문하기';
+    syncUI('sd1','st1','err','주문 실패');
+    toast('주문 실패: '+e.message);
+    btn.disabled=false; btn.textContent='주문하기';
   }
 }
 
 // ── 출석 ─────────────────────────────────────────────────────
 function renderAtt() {
-  const now = new Date();
-  document.getElementById('todayDate').textContent =
+  const now=new Date();
+  document.getElementById('todayDate').textContent=
     now.getFullYear()+'년 '+(now.getMonth()+1)+'월 '+now.getDate()+'일 '+
     ['일','월','화','수','목','금','토'][now.getDay()]+'요일';
-  const pts = parseInt(document.getElementById('attPts').value)||10;
-  const ckd = Object.keys(D.attChk).filter(k=>D.attChk[k]).length;
-  document.getElementById('attSum').innerHTML = `<span>출석 ${ckd}명</span><span>총 적립 ${ckd*pts} P</span>`;
-  document.getElementById('attList').innerHTML = D.students.map(s => {
-    const on = D.attChk[s.id];
+  const pts=parseInt(document.getElementById('attPts').value)||10;
+  const ckd=Object.keys(D.attChk).filter(k=>D.attChk[k]).length;
+  document.getElementById('attSum').innerHTML=`<span>출석 ${ckd}명</span><span>총 적립 ${ckd*pts} P</span>`;
+  document.getElementById('attList').innerHTML=D.students.map(s=>{
+    const on=D.attChk[s.id];
     return `<div class="ai ${on?'ck':''}">
       <div><div class="an">${s.name}</div>
       ${on?`<div class="ae">+${pts}P 적립 예정</div>`:'<div style="font-size:10px;color:var(--txm)">미출석</div>'}</div>
@@ -442,59 +434,54 @@ function renderAtt() {
   renderAttLog();
 }
 
-function togAtt(id) { D.attChk[id] = !D.attChk[id]; renderAtt(); }
+function togAtt(id) { D.attChk[id]=!D.attChk[id]; renderAtt(); }
 
 async function submitAtt() {
-  const pts = parseInt(document.getElementById('attPts').value)||10;
-  const ckd = D.students.filter(s=>D.attChk[s.id]);
-  if (!ckd.length) { toast('출석한 학생을 선택하세요'); return; }
-  const btn = document.getElementById('attBtn');
-  btn.disabled = true; btn.textContent = '저장 중...';
+  const pts=parseInt(document.getElementById('attPts').value)||10;
+  const ckd=D.students.filter(s=>D.attChk[s.id]);
+  if(!ckd.length) { toast('출석한 학생을 선택하세요'); return; }
+  const btn=document.getElementById('attBtn');
+  btn.disabled=true; btn.textContent='저장 중...';
   try {
-    const res = await api({ action:'attend', names:ckd.map(s=>s.name), pts });
-    res.updated.forEach(u => {
-      const st = D.students.find(s=>s.name===u.name);
-      if (st) st.points = u.points;
-    });
-    D.attChk = {};
-    toast(`${ckd.length}명 각 ${pts}P 적립 완료! 🎉`);
+    const res=await gasCall({action:'attend',names:ckd.map(s=>s.name),pts});
+    res.updated.forEach(u=>{ const st=D.students.find(s=>s.name===u.name); if(st) st.points=u.points; });
+    D.attChk={};
+    toast(ckd.length+'명 각 '+pts+'P 적립 완료! 🎉');
     await loadData();
-  } catch(e) {
-    toast('출석 저장 실패: ' + e.message);
-  }
-  btn.disabled = false; btn.textContent = '✓ 출석 저장 및 포인트 적립';
+  } catch(e) { toast('출석 저장 실패: '+e.message); }
+  btn.disabled=false; btn.textContent='✓ 출석 저장 및 포인트 적립';
 }
 
 function renderAttLog() {
-  const el = document.getElementById('attLog');
-  if (!D.attLogs.length) { el.innerHTML = '<div class="ce">출석 기록이 없습니다</div>'; return; }
-  el.innerHTML = D.attLogs.slice(0,8).map(g =>
+  const el=document.getElementById('attLog');
+  if(!D.attLogs.length) { el.innerHTML='<div class="ce">출석 기록 없음</div>'; return; }
+  el.innerHTML=D.attLogs.slice(0,8).map(g=>
     `<div class="ali"><b>${g.date} ${g.time}</b> | ${g.names.join(', ')} <span style="color:var(--accd);font-weight:700">각 +${g.pts}P</span></div>`
   ).join('');
 }
 
 // ── 관리자 ───────────────────────────────────────────────────
 function renderAdm() {
-  const sel = document.getElementById('admSel');
-  sel.innerHTML = '<option value="">학생 선택</option>' +
+  const sel=document.getElementById('admSel');
+  sel.innerHTML='<option value="">학생 선택</option>'+
     D.students.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
-  document.getElementById('stTb').innerHTML = D.students.map(s =>
+  document.getElementById('stTb').innerHTML=D.students.map(s=>
     `<tr><td>${s.name}</td><td><b>★${s.points}</b></td><td>
       <button class="bs gr" onclick="adjP('${s.name}',-10)" style="padding:2px 6px">-10</button>
       <button class="bs" onclick="adjP('${s.name}',10)" style="padding:2px 6px;margin-left:2px">+10</button>
     </td></tr>`
   ).join('');
-  document.getElementById('snTb').innerHTML = D.snacks.map(s =>
+  document.getElementById('snTb').innerHTML=D.snacks.map(s=>
     `<tr>
-      <td><img src="${s.img}" style="width:20px;height:20px;border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:4px" onerror="this.style.display='none'">${s.name}</td>
+      <td><img src="${s.img}" style="width:20px;height:20px;border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:3px" onerror="this.style.display='none'">${s.name}</td>
       <td><input id="pt_${s.id}" type="number" value="${s.points}" min="1" style="width:46px;border:1px solid #eee;border-radius:5px;padding:2px 4px;font-size:11px"></td>
       <td><input id="st_${s.id}" type="number" value="${s.stock}" min="0" style="width:42px;border:1px solid #eee;border-radius:5px;padding:2px 4px;font-size:11px"></td>
       <td><button class="bs gn" onclick="saveSnack(${s.id})" style="padding:3px 7px">저장</button></td>
     </tr>`
   ).join('');
-  const ol = document.getElementById('ordList');
-  if (!D.orders.length) { ol.innerHTML = '<div class="ce">주문 없음</div>'; return; }
-  ol.innerHTML = D.orders.map(o =>
+  const ol=document.getElementById('ordList');
+  if(!D.orders.length) { ol.innerHTML='<div class="ce">주문 없음</div>'; return; }
+  ol.innerHTML=D.orders.map(o=>
     `<div class="oi">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
         <span class="on_">${o.student}</span>
@@ -507,83 +494,86 @@ function renderAdm() {
   ).join('');
 }
 
-async function addPts() {
-  const id = +document.getElementById('admSel').value;
-  const pts = +document.getElementById('admPts').value;
-  if (!id||!pts||pts<=0) { toast('학생과 포인트를 입력하세요'); return; }
-  const s = D.students.find(s=>s.id===id);
-  if (!s) return;
-  sync('spin','처리 중...',true);
+// ── 학생 추가 (핵심 수정) ─────────────────────────────────────
+async function addStu() {
+  const nm = document.getElementById('newNm').value.trim();
+  const msg = document.getElementById('addStuMsg');
+  const btn = document.getElementById('addStuBtn');
+
+  if (!nm) { msg.style.color='var(--dng)'; msg.textContent='이름을 입력하세요'; return; }
+
+  btn.disabled=true; btn.textContent='추가 중...';
+  msg.style.color='var(--txm)'; msg.textContent='⏳ 저장 중...';
+
   try {
-    const res = await api({ action:'updatePoints', name:s.name, delta:pts });
-    s.points = res.newPoints;
-    sync('ok','저장됨',true);
-    toast(s.name+'에게 '+pts+'P 추가!');
-    document.getElementById('admPts').value = '';
-    renderAdm();
-  } catch(e) { sync('err','실패',true); toast('실패: '+e.message); }
+    const res = await gasCall({ action:'addStudent', name:nm });
+    // 성공 시 로컬에도 즉시 반영
+    D.students.push({ id:res.id, name:res.name, points:0 });
+    document.getElementById('newNm').value='';
+    msg.style.color='var(--accd)'; msg.textContent='✓ '+res.name+' 추가됨!';
+    renderAdm(); renderChips();
+    toast(res.name+' 학생이 추가됐어요!');
+  } catch(e) {
+    msg.style.color='var(--dng)'; msg.textContent='❌ 실패: '+e.message;
+    toast('추가 실패: '+e.message);
+  }
+  btn.disabled=false; btn.textContent='추가';
+}
+
+async function addPts() {
+  const id=+document.getElementById('admSel').value;
+  const pts=+document.getElementById('admPts').value;
+  if(!id||!pts||pts<=0) { toast('학생과 포인트를 입력하세요'); return; }
+  const s=D.students.find(s=>s.id===id);
+  if(!s) return;
+  syncUI('sd2','st2','spin','처리 중...');
+  try {
+    const res=await gasCall({action:'updatePoints',name:s.name,delta:pts});
+    s.points=res.newPoints; syncUI('sd2','st2','ok','저장됨');
+    document.getElementById('admPts').value='';
+    toast(s.name+'에게 '+pts+'P 추가!'); renderAdm();
+  } catch(e) { syncUI('sd2','st2','err','실패'); toast('실패: '+e.message); }
 }
 
 async function adjP(name, delta) {
-  const s = D.students.find(s=>s.name===name);
-  if (!s) return;
-  sync('spin','처리 중...',true);
+  const s=D.students.find(s=>s.name===name);
+  syncUI('sd2','st2','spin','처리 중...');
   try {
-    const res = await api({ action:'updatePoints', name, delta });
-    s.points = res.newPoints;
-    sync('ok','저장됨',true);
-    renderAdm();
-  } catch(e) { sync('err','실패',true); toast('실패: '+e.message); }
+    const res=await gasCall({action:'updatePoints',name,delta});
+    s.points=res.newPoints; syncUI('sd2','st2','ok','저장됨'); renderAdm();
+  } catch(e) { syncUI('sd2','st2','err','실패'); toast('실패: '+e.message); }
 }
 
 async function saveSnack(id) {
-  const pts = parseInt(document.getElementById('pt_'+id).value);
-  const stock = parseInt(document.getElementById('st_'+id).value);
-  sync('spin','저장 중...',true);
+  const pts=parseInt(document.getElementById('pt_'+id).value);
+  const stock=parseInt(document.getElementById('st_'+id).value);
+  syncUI('sd2','st2','spin','저장 중...');
   try {
-    await api({ action:'updateSnack', id, points:pts, stock });
-    const s = D.snacks.find(s=>s.id===id);
-    if (s) { s.points=pts; s.stock=stock; }
-    sync('ok','저장됨',true);
-    toast('재고 저장 완료!');
-  } catch(e) { sync('err','실패',true); toast('실패: '+e.message); }
+    await gasCall({action:'updateSnack',id,points:pts,stock});
+    const s=D.snacks.find(s=>s.id===id); if(s) {s.points=pts; s.stock=stock;}
+    syncUI('sd2','st2','ok','저장됨'); toast('재고 저장 완료!');
+  } catch(e) { syncUI('sd2','st2','err','실패'); toast('실패: '+e.message); }
 }
 
 async function togOrd(ordId, curStatus) {
-  const newStatus = curStatus==='전달완료'?'대기중':'전달완료';
-  sync('spin','처리 중...',true);
+  const ns=curStatus==='전달완료'?'대기중':'전달완료';
+  syncUI('sd2','st2','spin','처리 중...');
   try {
-    await api({ action:'updateOrderStatus', orderId:ordId, status:newStatus });
-    const o = D.orders.find(o=>o.id===ordId);
-    if (o) o.status = newStatus;
-    sync('ok','저장됨',true);
-    renderAdm();
-  } catch(e) { sync('err','실패',true); toast('실패: '+e.message); }
-}
-
-async function addStu() {
-  const nm = document.getElementById('newNm').value.trim();
-  if (!nm) { toast('이름을 입력하세요'); return; }
-  sync('spin','처리 중...',true);
-  try {
-    const res = await api({ action:'addStudent', name:nm });
-    D.students.push({ id:res.id, name:nm, points:0 });
-    document.getElementById('newNm').value = '';
-    sync('ok','저장됨',true);
-    toast(nm+' 학생 추가!');
-    renderAdm(); renderChips();
-  } catch(e) { sync('err','실패',true); toast('실패: '+e.message); }
+    await gasCall({action:'updateOrderStatus',orderId:ordId,status:ns});
+    const o=D.orders.find(o=>o.id===ordId); if(o) o.status=ns;
+    syncUI('sd2','st2','ok','저장됨'); renderAdm();
+  } catch(e) { syncUI('sd2','st2','err','실패'); toast('실패: '+e.message); }
 }
 
 function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2400);
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2400);
 }
 
-document.getElementById('attPts').addEventListener('input', ()=>{ if(D.mode==='a') renderAtt(); });
+document.getElementById('attPts').addEventListener('input',()=>{ if(D.mode==='a') renderAtt(); });
 
-// 초기화
+// 시작
 loadData();
 </script>
 </body>
